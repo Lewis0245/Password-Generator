@@ -1,7 +1,9 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime> 
-
+#if defined(_WIN32) || defined(_WIN64)
+#include <Windows.h>
+#endif
 using namespace std;
 
 class Characters
@@ -55,14 +57,28 @@ string Preferences()
     return password;
 }
 
+
 int main()
 {
     string password = Preferences();
+#if defined(_WIN32) || defined(_WIN64)
+    // Copy password to clipboard on Windows
+    const char* text = password.c_str();
+    if (OpenClipboard(nullptr)) {
+        EmptyClipboard();
+        HGLOBAL clipBuffer = GlobalAlloc(GMEM_DDESHARE, strlen(text) + 1);
+        char* buffer = (char*)GlobalLock(clipBuffer);
+        strcpy_s(buffer, strlen(text) + 1, text);
+        GlobalUnlock(clipBuffer);
+        SetClipboardData(CF_TEXT, clipBuffer);
+        CloseClipboard();
+        GlobalFree(clipBuffer);
+    }
+#endif
     cout << "Your password is: " << password << "\n";
 
-
     cout << "\nPress Enter to exit...";
-    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+	cin.ignore();
     cin.get();
     return 0;
 }
